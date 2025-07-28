@@ -1,0 +1,8 @@
+[
+  {
+    "origin": ["https://ipu-admin.firebaseapp.com"],
+    "method": ["GET", "POST", "DELETE", "PUT", "OPTIONS"],
+    "responseHeader": ["Content-Type"],
+    "maxAgeSeconds": 3600
+  }
+]
