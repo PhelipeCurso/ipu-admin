@@ -9,10 +9,12 @@ import Doacoes from './pages/Doacoes';
 import Segmentos from './pages/Segmentos';
 import Responsaveis from './pages/Responsaveis';
 import React from 'react';
-import Metas from './pages/Metas'; 
+import Metas from './pages/Metas';
 import Usuarios from './pages/Usuarios';
 import InformacoesNoticias from './pages/InformacoesNoticias';
 import InformacoesEventos from './pages/InformacoesEventos';
+import PdvLogin from './pages/PdvLogin';
+import PdvPanel from './pages/PdvPanel';
 function App() {
   return (
     <AuthProvider>
@@ -99,10 +101,12 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route path="/pdv/login" element={<PdvLogin />} />
+          <Route path="/pdv/painel" element={<PdvPanel />} />
         </Routes>
       </Router>
     </AuthProvider>
-    
+
   );
 }
 

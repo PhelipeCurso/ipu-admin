@@ -25,24 +25,24 @@ export default function Usuarios() {
   }, []);
 
   const handleChange = (e) => {
-  const { name, value, type, checked } = e.target;
+    const { name, value, type, checked } = e.target;
 
-  if (name.startsWith('endereco.')) {
-    const key = name.split('.')[1];
-    setUsuarioEditando((prev) => ({
-      ...prev,
-      endereco: {
-        ...prev.endereco,
-        [key]: value
-      }
-    }));
-  } else {
-    setUsuarioEditando((prev) => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
-  }
-};
+    if (name.startsWith('endereco.')) {
+      const key = name.split('.')[1];
+      setUsuarioEditando((prev) => ({
+        ...prev,
+        endereco: {
+          ...prev.endereco,
+          [key]: value
+        }
+      }));
+    } else {
+      setUsuarioEditando((prev) => ({
+        ...prev,
+        [name]: type === 'checkbox' ? checked : value
+      }));
+    }
+  };
 
   const abrirModalEdicao = (usuario) => {
     setUsuarioEditando(usuario);
@@ -174,102 +174,125 @@ export default function Usuarios() {
         <Modal.Body>
           {usuarioEditando && (
             <Form className="row g-3">
-  {/* Dados pessoais */}
-  <Form.Group className="col-md-6">
-    <Form.Label>Nome</Form.Label>
-    <Form.Control name="nome" value={usuarioEditando.nome || ''} onChange={handleChange} />
-  </Form.Group>
-  <Form.Group className="col-md-6">
-    <Form.Label>CPF</Form.Label>
-    <Form.Control name="cpf" value={usuarioEditando.cpf || ''} onChange={handleChange} />
-  </Form.Group>
-  <Form.Group className="col-md-4">
-    <Form.Label>Data de Nascimento</Form.Label>
-    <Form.Control type="date" name="dataNascimento" value={usuarioEditando.dataNascimento || ''} onChange={handleChange} />
-  </Form.Group>
-  <Form.Group className="col-md-4">
-    <Form.Label>Estado Civil</Form.Label>
-    <Form.Control name="estadoCivil" value={usuarioEditando.estadoCivil || ''} onChange={handleChange} />
-  </Form.Group>
-  <Form.Group className="col-md-4">
-    <Form.Label>Data do Batismo</Form.Label>
-    <Form.Control type="date" name="dataBatismo" value={usuarioEditando.dataBatismo || ''} onChange={handleChange} />
-  </Form.Group>
-  <Form.Group className="col-md-6">
-    <Form.Label>E-mail</Form.Label>
-    <Form.Control name="email" value={usuarioEditando.email || ''} onChange={handleChange} />
-  </Form.Group>
-  <Form.Group className="col-md-6">
-    <Form.Label>Membro Desde</Form.Label>
-    <Form.Control type="date" name="membroDesde" value={usuarioEditando.membroDesde || ''} onChange={handleChange} />
-  </Form.Group>
+              {/* Dados pessoais */}
+              <Form.Group className="col-md-6">
+                <Form.Label>Nome</Form.Label>
+                <Form.Control name="nome" value={usuarioEditando.nome || ''} onChange={handleChange} />
+              </Form.Group>
+              <Form.Group className="col-md-6">
+                <Form.Label>CPF</Form.Label>
+                <Form.Control name="cpf" value={usuarioEditando.cpf || ''} onChange={handleChange} />
+              </Form.Group>
+              <Form.Group className="col-md-4">
+                <Form.Label>Data de Nascimento</Form.Label>
+                <Form.Control type="date" name="dataNascimento" value={usuarioEditando.dataNascimento || ''} onChange={handleChange} />
+              </Form.Group>
+              <Form.Group className="col-md-4">
+                <Form.Label>Estado Civil</Form.Label>
+                <Form.Control name="estadoCivil" value={usuarioEditando.estadoCivil || ''} onChange={handleChange} />
+              </Form.Group>
+              <Form.Group className="col-md-4">
+                <Form.Label>Data do Batismo</Form.Label>
+                <Form.Control type="date" name="dataBatismo" value={usuarioEditando.dataBatismo || ''} onChange={handleChange} />
+              </Form.Group>
+              <Form.Group className="col-md-6">
+                <Form.Label>E-mail</Form.Label>
+                <Form.Control name="email" value={usuarioEditando.email || ''} onChange={handleChange} />
+              </Form.Group>
+              <Form.Group className="col-md-6">
+                <Form.Label>Membro Desde</Form.Label>
+                <Form.Control type="date" name="membroDesde" value={usuarioEditando.membroDesde || ''} onChange={handleChange} />
+              </Form.Group>
 
-  {/* Agrupamento das flags booleanas */}
-  <Form.Group className="col-md-12">
-    <div className="border rounded p-3">
-      <Form.Check
-        type="checkbox"
-        label="É Batizado?"
-        name="batizado"
-        checked={usuarioEditando.batizado || false}
-        onChange={handleChange}
-      />
-      <Form.Check
-        type="checkbox"
-        label="Possui Cargo Eclesiástico?"
-        name="cargoEclesiastico"
-        checked={usuarioEditando.cargoEclesiastico || false}
-        onChange={handleChange}
-      />
-      <Form.Check
-        type="checkbox"
-        label="Pode gerenciar agenda (notícias/eventos)"
-        name="podeGerenciarAgenda"
-        checked={usuarioEditando.podeGerenciarAgenda || false}
-        onChange={handleChange}
-      />
-      <Form.Check
-        type="checkbox"
-        label=" Pedidos de Oração"
-        name="podeVerPedidosOracao"
-        checked={usuarioEditando.podeVerPedidosOracao || false}
-        onChange={handleChange}
-      />
-    </div>
-  </Form.Group>
+              {/* Agrupamento das flags booleanas */}
+              <Form.Group className="col-md-12">
+                <div className="border rounded p-3">
+                  <Form.Check
+                    type="checkbox"
+                    label="É Batizado?"
+                    name="batizado"
+                    checked={usuarioEditando.batizado || false}
+                    onChange={handleChange}
+                  />
+                  <Form.Check
+                    type="checkbox"
+                    label="Possui Cargo Eclesiástico?"
+                    name="cargoEclesiastico"
+                    checked={usuarioEditando.cargoEclesiastico || false}
+                    onChange={handleChange}
+                  />
+                  <Form.Check
+                    type="checkbox"
+                    label="Pode gerenciar agenda (notícias/eventos)"
+                    name="podeGerenciarAgenda"
+                    checked={usuarioEditando.podeGerenciarAgenda || false}
+                    onChange={handleChange}
+                  />
+                  <Form.Check
+                    type="checkbox"
+                    label=" Pedidos de Oração"
+                    name="podeVerPedidosOracao"
+                    checked={usuarioEditando.podeVerPedidosOracao || false}
+                    onChange={handleChange}
+                  />
+                  <Form.Check
+                    type="checkbox"
+                    label="Pode Editar agendas"
+                    name="podeEditarAgendas"
+                    checked={usuarioEditando.podeEditarAgendas || false}
+                    onChange={handleChange}
+                  />
+                  <Form.Check
+                    type="checkbox"
+                    label="Usa PDV?"
+                    name="usaPDV"
+                    checked={usuarioEditando.usaPDV || false}
+                    onChange={handleChange}
+                  />
+                   <Form.Control
+                    type="text"
+                    label="Senha do PDV"
+                    name="senhaPDV"
+                    value={usuarioEditando.senhaPDV || ''}
+                    onChange={handleChange}
+                  />
+                </div>
+              </Form.Group>
 
-  {/* Área de Serviço */}
-  <Form.Group className="col-md-6">
-    <Form.Label>Serve em qual área?</Form.Label>
-    <Form.Control name="areaDeServico" value={usuarioEditando.areaDeServico || ''} onChange={handleChange} />
-  </Form.Group>
+              {/* Área de Serviço */}
+              <Form.Group className="col-md-6">
+                <Form.Label>Serve em qual área?</Form.Label>
+                <Form.Control name="areaDeServico" value={usuarioEditando.areaDeServico || ''} onChange={handleChange} />
+              </Form.Group>
 
-  {/* Endereço */}
-  <Form.Group className="col-md-6">
-    <Form.Label>CEP</Form.Label>
-    <Form.Control name="endereco.cep" value={usuarioEditando.endereco?.cep || ''} onChange={handleChange} />
-  </Form.Group>
-  <Form.Group className="col-md-6">
-    <Form.Label>Logradouro</Form.Label>
-    <Form.Control name="endereco.logradouro" value={usuarioEditando.endereco?.logradouro || ''} onChange={handleChange} />
-  </Form.Group>
-  <Form.Group className="col-md-3">
-    <Form.Label>Número</Form.Label>
-    <Form.Control name="endereco.numero" value={usuarioEditando.endereco?.numero || ''} onChange={handleChange} />
-  </Form.Group>
-  <Form.Group className="col-md-3">
-    <Form.Label>Bairro</Form.Label>
-    <Form.Control name="endereco.bairro" value={usuarioEditando.endereco?.bairro || ''} onChange={handleChange} />
-  </Form.Group>
-  <Form.Group className="col-md-4">
-    <Form.Label>Cidade</Form.Label>
-    <Form.Control name="endereco.cidade" value={usuarioEditando.endereco?.cidade || ''} onChange={handleChange} />
-  </Form.Group>
-  <Form.Group className="col-md-8">
-    <Form.Label>Complemento</Form.Label>
-    <Form.Control name="endereco.complemento" value={usuarioEditando.endereco?.complemento || ''} onChange={handleChange} />
-  </Form.Group>
-</Form>
+              
+
+              {/* Endereço */}
+              <Form.Group className="col-md-6">
+                <Form.Label>CEP</Form.Label>
+                <Form.Control name="endereco.cep" value={usuarioEditando.endereco?.cep || ''} onChange={handleChange} />
+              </Form.Group>
+              <Form.Group className="col-md-6">
+                <Form.Label>Logradouro</Form.Label>
+                <Form.Control name="endereco.logradouro" value={usuarioEditando.endereco?.logradouro || ''} onChange={handleChange} />
+              </Form.Group>
+              <Form.Group className="col-md-3">
+                <Form.Label>Número</Form.Label>
+                <Form.Control name="endereco.numero" value={usuarioEditando.endereco?.numero || ''} onChange={handleChange} />
+              </Form.Group>
+              <Form.Group className="col-md-3">
+                <Form.Label>Bairro</Form.Label>
+                <Form.Control name="endereco.bairro" value={usuarioEditando.endereco?.bairro || ''} onChange={handleChange} />
+              </Form.Group>
+              <Form.Group className="col-md-4">
+                <Form.Label>Cidade</Form.Label>
+                <Form.Control name="endereco.cidade" value={usuarioEditando.endereco?.cidade || ''} onChange={handleChange} />
+              </Form.Group>
+              <Form.Group className="col-md-8">
+                <Form.Label>Complemento</Form.Label>
+                <Form.Control name="endereco.complemento" value={usuarioEditando.endereco?.complemento || ''} onChange={handleChange} />
+              </Form.Group>
+            </Form>
 
           )}
         </Modal.Body>

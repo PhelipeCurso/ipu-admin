@@ -15,6 +15,8 @@ export default function Sidebar() {
         <Link to="/usuarios" className="list-group-item list-group-item-action">Usuários</Link>
         <Link to="/informacoes/noticias" className="list-group-item list-group-item-action">Notícias</Link>
         <Link to="/informacoes/eventos" className="list-group-item list-group-item-action">Eventos</Link>
+        <Link to="/pdv/painel" className="list-group-item list-group-item-action">Painel do PDV</Link>
+        <Link to="/pdv/login" className="list-group-item list-group-item-action">Login PDV</Link>
       </div>
     </div>
   );
