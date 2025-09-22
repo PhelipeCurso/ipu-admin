@@ -15,8 +15,31 @@ export default function Sidebar() {
         <Link to="/usuarios" className="list-group-item list-group-item-action">Usuários</Link>
         <Link to="/informacoes/noticias" className="list-group-item list-group-item-action">Notícias</Link>
         <Link to="/informacoes/eventos" className="list-group-item list-group-item-action">Eventos</Link>
-        <Link to="/pdv/painel" className="list-group-item list-group-item-action">Painel do PDV</Link>
-        <Link to="/pdv/login" className="list-group-item list-group-item-action">Login PDV</Link>
+
+        {/* Menu PDV como dropdown dentro do list-group */}
+        <div className="dropdown">
+          <a
+            className="list-group-item list-group-item-action dropdown-toggle"
+            href="#"
+            id="pdvDropdown"
+            role="button"
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+          >
+            PDV
+          </a>
+          <ul className="dropdown-menu" aria-labelledby="pdvDropdown">
+            <li>
+              <Link className="dropdown-item" to="/pdv/login">Login PDV</Link>
+            </li>
+            <li>
+              <Link className="dropdown-item" to="/pdv/PontoDeVenda">Ponto de Venda</Link>
+            </li>
+            <li>
+              <Link className="dropdown-item" to="/pdv/ProdutosPDV">Produtos do PDV</Link>
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
   );
