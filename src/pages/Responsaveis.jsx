@@ -9,6 +9,7 @@ import {
   getDoc,
 } from 'firebase/firestore';
 import Layout from '../components/Layout';
+import { Card, Form, Button, Table } from 'react-bootstrap';
 
 export default function Responsaveis() {
   const [segmentos, setSegmentos] = useState([]);
@@ -19,7 +20,6 @@ export default function Responsaveis() {
   });
   const [responsaveis, setResponsaveis] = useState([]);
 
-  // Carregar todos os segmentos
   const carregarSegmentos = async () => {
     const snapshot = await getDocs(collection(db, 'segmentos'));
     const dados = snapshot.docs.map((doc) => ({
@@ -29,7 +29,6 @@ export default function Responsaveis() {
     setSegmentos(dados);
   };
 
-  // Carregar responsáveis
   const carregarResponsaveis = async () => {
     const snapshot = await getDocs(collection(db, 'responsaveis'));
     const dados = await Promise.all(
@@ -73,81 +72,98 @@ export default function Responsaveis() {
 
   return (
     <Layout>
-      <div className="container">
-        <h3>Atribuir Responsáveis por Segmento</h3>
+      <div className="container py-4">
+        <h3 className="mb-4">👥 Atribuir Responsáveis por Segmento</h3>
 
         {/* Formulário */}
-        <form className="row g-3 mb-4" onSubmit={salvarResponsavel}>
-          <div className="col-md-3">
-            <label className="form-label">Nome</label>
-            <input
-              type="text"
-              className="form-control"
-              name="nome"
-              value={form.nome}
-              onChange={handleChange}
-              required
-            />
-          </div>
+        <Card className="shadow-sm mb-4">
+          <Card.Body>
+            <h5 className="mb-3">Novo Responsável</h5>
+            <Form className="row g-3" onSubmit={salvarResponsavel}>
+              <Form.Group className="col-md-3">
+                <Form.Label>Nome</Form.Label>
+                <Form.Control
+                  type="text"
+                  name="nome"
+                  value={form.nome}
+                  onChange={handleChange}
+                  placeholder="Digite o nome"
+                  required
+                />
+              </Form.Group>
 
-          <div className="col-md-3">
-            <label className="form-label">E-mail</label>
-            <input
-              type="email"
-              className="form-control"
-              name="email"
-              value={form.email}
-              onChange={handleChange}
-              required
-            />
-          </div>
+              <Form.Group className="col-md-3">
+                <Form.Label>E-mail</Form.Label>
+                <Form.Control
+                  type="email"
+                  name="email"
+                  value={form.email}
+                  onChange={handleChange}
+                  placeholder="exemplo@email.com"
+                  required
+                />
+              </Form.Group>
 
-          <div className="col-md-4">
-            <label className="form-label">Segmento</label>
-            <select
-              className="form-select"
-              name="segmentoId"
-              value={form.segmentoId}
-              onChange={handleChange}
-              required
-            >
-              <option value="">Selecione...</option>
-              {segmentos.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.nome}
-                </option>
-              ))}
-            </select>
-          </div>
+              <Form.Group className="col-md-4">
+                <Form.Label>Segmento</Form.Label>
+                <Form.Select
+                  name="segmentoId"
+                  value={form.segmentoId}
+                  onChange={handleChange}
+                  required
+                >
+                  <option value="">Selecione...</option>
+                  {segmentos.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.nome}
+                    </option>
+                  ))}
+                </Form.Select>
+              </Form.Group>
 
-          <div className="col-md-2 d-flex align-items-end">
-            <button type="submit" className="btn btn-primary w-100">
-              Atribuir
-            </button>
-          </div>
-        </form>
+              <div className="col-md-2 d-flex align-items-end">
+                <Button type="submit" variant="primary" className="w-100">
+                  Atribuir
+                </Button>
+              </div>
+            </Form>
+          </Card.Body>
+        </Card>
 
         {/* Lista de Responsáveis */}
-        <table className="table table-bordered">
-          <thead>
-            <tr>
-              <th>Nome</th>
-              <th>E-mail</th>
-              <th>Segmento</th>
-              <th>Data</th>
-            </tr>
-          </thead>
-          <tbody>
-            {responsaveis.map((r) => (
-              <tr key={r.id}>
-                <td>{r.nome}</td>
-                <td>{r.email}</td>
-                <td>{r.segmentoNome}</td>
-                <td>{r.criadoEm?.toDate().toLocaleDateString()}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <Card className="shadow-sm">
+          <Card.Body>
+            <h5 className="mb-3">📋 Responsáveis Registrados</h5>
+            <Table bordered hover responsive>
+              <thead className="table-light">
+                <tr>
+                  <th>Nome</th>
+                  <th>E-mail</th>
+                  <th>Segmento</th>
+                  <th>Data</th>
+                </tr>
+              </thead>
+              <tbody>
+                {responsaveis.length > 0 ? (
+                  responsaveis.map((r) => (
+                    <tr key={r.id}>
+                      <td>{r.nome}</td>
+                      <td>{r.email}</td>
+                      <td>{r.segmentoNome}</td>
+                      <td>{r.criadoEm?.toDate().toLocaleDateString()}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="4" className="text-center text-muted">
+                      Nenhum responsável cadastrado
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </Table>
+          </Card.Body>
+        </Card>
       </div>
     </Layout>
   );

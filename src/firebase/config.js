@@ -1,9 +1,9 @@
-import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
-import { getStorage } from 'firebase/storage';
-// import { getAnalytics } from "firebase/analytics";
+import { initializeApp } from "firebase/app";
+import { getAuth, GoogleAuthProvider } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
 
+// Configuração do Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyBVzjgKFARvnte6muUDi9tQTNTZuNeNp-0",
   authDomain: "ipu-admin.firebaseapp.com",
@@ -14,10 +14,15 @@ const firebaseConfig = {
   // measurementId: "G-P6GSRF6D4W"
 };
 
+// Inicializar
 const app = initializeApp(firebaseConfig);
-// const analytics = getAnalytics(app);
 
-export const auth = getAuth(app);
-export const db = getFirestore(app);
-export const storage = getStorage(app);
-    
+// Serviços
+const auth = getAuth(app);
+const db = getFirestore(app);
+const storage = getStorage(app);
+
+// 🔹 Provider do Google
+const provider = new GoogleAuthProvider();
+
+export { auth, db, storage, provider };

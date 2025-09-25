@@ -26,7 +26,6 @@ export default function Usuarios() {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-
     if (name.startsWith('endereco.')) {
       const key = name.split('.')[1];
       setUsuarioEditando((prev) => ({
@@ -57,7 +56,9 @@ export default function Usuarios() {
   };
 
   const alternarBloqueio = async (usuario) => {
-    const confirmar = window.confirm(`Deseja realmente ${usuario.bloqueado ? 'desbloquear' : 'bloquear'} este usuário?`);
+    const confirmar = window.confirm(
+      `Deseja realmente ${usuario.bloqueado ? 'desbloquear' : 'bloquear'} este usuário?`
+    );
     if (!confirmar) return;
 
     await updateDoc(doc(db, 'usuarios', usuario.id), {
@@ -106,72 +107,93 @@ export default function Usuarios() {
 
   return (
     <Layout>
-      <div className="container">
-        <h3 className="mb-4">Usuários Cadastrados</h3>
+      <div className="container py-4">
+        <h3 className="mb-4">👤 Usuários Cadastrados</h3>
 
-        <div className="mb-3 d-flex flex-wrap gap-2">
-          <input
-            type="text"
-            className="form-control"
-            placeholder="Buscar por nome ou e-mail..."
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-          />
-          <button className="btn btn-outline-danger" onClick={exportarPDF}>Exportar PDF</button>
-          <button className="btn btn-outline-success" onClick={exportarExcel}>Exportar Excel</button>
+        {/* Busca e exportação */}
+        <div className="mb-3">
+          <div className="input-group">
+            <input
+              type="text"
+              className="form-control"
+              placeholder="Buscar por nome ou e-mail..."
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+            />
+            <button className="btn btn-outline-danger" onClick={exportarPDF}>
+              <i className="bi bi-file-earmark-pdf me-1"></i> PDF
+            </button>
+            <button className="btn btn-outline-success" onClick={exportarExcel}>
+              <i className="bi bi-file-earmark-excel me-1"></i> Excel
+            </button>
+          </div>
         </div>
 
-        <div className="table-responsive">
-          <table className="table table-bordered table-striped">
-            <thead className="table-light">
-              <tr>
-                <th>Nome</th>
-                <th>CPF</th>
-                <th>Status</th>
-                <th>Email</th>
-                <th>Ações</th>
-                <th>Inativar</th>
-              </tr>
-            </thead>
-            <tbody>
-              {usuariosFiltrados.map((u) => (
-                <tr key={u.id}>
-                  <td>{u.nome}</td>
-                  <td>{u.cpf}</td>
-                  <td>
-                    <span className={`badge ${u.bloqueado ? 'bg-danger' : 'bg-success'}`}>
-                      {u.bloqueado ? 'Bloqueado' : 'Ativo'}
-                    </span>
-                  </td>
-                  <td>{u.email}</td>
-                  <td>
-                    <button className="btn btn-sm btn-outline-primary" onClick={() => abrirModalEdicao(u)}>
-                      Editar
-                    </button>
-                  </td>
-                  <td>
-                    <button className={`btn btn-sm ${u.bloqueado ? 'btn-outline-success' : 'btn-outline-danger'}`} onClick={() => alternarBloqueio(u)}>
-                      {u.bloqueado ? 'Desbloquear' : 'Bloquear'}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {usuariosFiltrados.length === 0 && (
-                <tr>
-                  <td colSpan="6" className="text-center">Nenhum usuário encontrado</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+        {/* Tabela */}
+        <div className="card shadow-sm">
+          <div className="card-body p-0">
+            <div className="table-responsive">
+              <table className="table table-hover table-striped align-middle mb-0">
+                <thead className="table-light">
+                  <tr>
+                    <th>Nome</th>
+                    <th>CPF</th>
+                    <th>Status</th>
+                    <th>Email</th>
+                    <th>Ações</th>
+                    <th>Inativar</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {usuariosFiltrados.map((u) => (
+                    <tr key={u.id}>
+                      <td>{u.nome}</td>
+                      <td>{u.cpf}</td>
+                      <td>
+                        <span className={`badge ${u.bloqueado ? 'bg-danger' : 'bg-success'}`}>
+                          {u.bloqueado ? 'Bloqueado' : 'Ativo'}
+                        </span>
+                      </td>
+                      <td>{u.email}</td>
+                      <td>
+                        <button
+                          className="btn btn-sm btn-outline-primary"
+                          onClick={() => abrirModalEdicao(u)}
+                        >
+                          <i className="bi bi-pencil-square me-1"></i> Editar
+                        </button>
+                      </td>
+                      <td>
+                        <button
+                          className={`btn btn-sm ${u.bloqueado ? 'btn-outline-success' : 'btn-outline-danger'}`}
+                          onClick={() => alternarBloqueio(u)}
+                        >
+                          <i className={`bi ${u.bloqueado ? 'bi-unlock' : 'bi-lock'} me-1`}></i>
+                          {u.bloqueado ? 'Desbloquear' : 'Bloquear'}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {usuariosFiltrados.length === 0 && (
+                    <tr>
+                      <td colSpan="6" className="text-center py-3">
+                        Nenhum usuário encontrado
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Modal de edição */}
       <Modal size="lg" show={showModal} onHide={() => setShowModal(false)}>
         <Modal.Header closeButton>
-          <Modal.Title>Editar Usuário</Modal.Title>
+          <Modal.Title>✏️ Editar Usuário</Modal.Title>
         </Modal.Header>
-        <Modal.Body>
+        <Modal.Body className="bg-light">
           {usuarioEditando && (
             <Form className="row g-3">
               {/* Dados pessoais */}
@@ -204,59 +226,22 @@ export default function Usuarios() {
                 <Form.Control type="date" name="membroDesde" value={usuarioEditando.membroDesde || ''} onChange={handleChange} />
               </Form.Group>
 
-              {/* Agrupamento das flags booleanas */}
+              {/* Permissões */}
               <Form.Group className="col-md-12">
-                <div className="border rounded p-3">
-                  <Form.Check
-                    type="checkbox"
-                    label="É Batizado?"
-                    name="batizado"
-                    checked={usuarioEditando.batizado || false}
-                    onChange={handleChange}
-                  />
-                  <Form.Check
-                    type="checkbox"
-                    label="Possui Cargo Eclesiástico?"
-                    name="cargoEclesiastico"
-                    checked={usuarioEditando.cargoEclesiastico || false}
-                    onChange={handleChange}
-                  />
-                  <Form.Check
-                    type="checkbox"
-                    label="Pode gerenciar agenda (notícias/eventos)"
-                    name="podeGerenciarAgenda"
-                    checked={usuarioEditando.podeGerenciarAgenda || false}
-                    onChange={handleChange}
-                  />
-                  <Form.Check
-                    type="checkbox"
-                    label=" Pedidos de Oração"
-                    name="podeVerPedidosOracao"
-                    checked={usuarioEditando.podeVerPedidosOracao || false}
-                    onChange={handleChange}
-                  />
-                  <Form.Check
-                    type="checkbox"
-                    label="Pode Editar agendas"
-                    name="podeEditarAgendas"
-                    checked={usuarioEditando.podeEditarAgendas || false}
-                    onChange={handleChange}
-                  />
-                  <Form.Check
-                    type="checkbox"
-                    label="Usa PDV?"
-                    name="usaPDV"
-                    checked={usuarioEditando.usaPDV || false}
-                    onChange={handleChange}
-                  />
-                   <Form.Control
-                    type="text"
-                    label="Senha do PDV"
-                    name="senhaPDV"
-                    value={usuarioEditando.senhaPDV || ''}
-                    onChange={handleChange}
-                  />
-                </div>
+                <fieldset className="border rounded p-3">
+                  <legend className="fs-6">⚙️ Permissões & Opções</legend>
+                  <Form.Check type="checkbox" label="É Batizado?" name="batizado" checked={usuarioEditando.batizado || false} onChange={handleChange} />
+                  <Form.Check type="checkbox" label="Possui Cargo Eclesiástico?" name="cargoEclesiastico" checked={usuarioEditando.cargoEclesiastico || false} onChange={handleChange} />
+                  <Form.Check type="checkbox" label="Pode gerenciar agenda (notícias/eventos)" name="podeGerenciarAgenda" checked={usuarioEditando.podeGerenciarAgenda || false} onChange={handleChange} />
+                  <Form.Check type="checkbox" label="Pedidos de Oração" name="podeVerPedidosOracao" checked={usuarioEditando.podeVerPedidosOracao || false} onChange={handleChange} />
+                  <Form.Check type="checkbox" label="Pode Editar agendas" name="podeEditarAgendas" checked={usuarioEditando.podeEditarAgendas || false} onChange={handleChange} />
+                  <Form.Check type="checkbox" label="Usa PDV?" name="usaPDV" checked={usuarioEditando.usaPDV || false} onChange={handleChange} />
+                  <Form.Check type="checkbox" label="Administrador" name="isAdmin" checked={usuarioEditando.isAdmin || false} onChange={handleChange} />
+                  <Form.Group className="mt-2">
+                    <Form.Label>Senha do PDV</Form.Label>
+                    <Form.Control type="password" name="senhaPDV" value={usuarioEditando.senhaPDV || ""} onChange={handleChange} />
+                  </Form.Group>
+                </fieldset>
               </Form.Group>
 
               {/* Área de Serviço */}
@@ -264,8 +249,6 @@ export default function Usuarios() {
                 <Form.Label>Serve em qual área?</Form.Label>
                 <Form.Control name="areaDeServico" value={usuarioEditando.areaDeServico || ''} onChange={handleChange} />
               </Form.Group>
-
-              
 
               {/* Endereço */}
               <Form.Group className="col-md-6">
@@ -293,12 +276,15 @@ export default function Usuarios() {
                 <Form.Control name="endereco.complemento" value={usuarioEditando.endereco?.complemento || ''} onChange={handleChange} />
               </Form.Group>
             </Form>
-
           )}
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowModal(false)}>Cancelar</Button>
-          <Button variant="primary" onClick={salvarEdicao}>Salvar Alterações</Button>
+          <Button variant="secondary" onClick={() => setShowModal(false)}>
+            <i className="bi bi-x-circle me-1"></i> Cancelar
+          </Button>
+          <Button variant="primary" onClick={salvarEdicao}>
+            <i className="bi bi-save me-1"></i> Salvar Alterações
+          </Button>
         </Modal.Footer>
       </Modal>
     </Layout>

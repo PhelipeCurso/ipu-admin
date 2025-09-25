@@ -10,7 +10,7 @@ import {
   serverTimestamp,
 } from 'firebase/firestore';
 import Layout from '../components/Layout';
-import { Modal, Button, Form } from 'react-bootstrap';
+import { Modal, Button, Form, Card, Table, Badge } from 'react-bootstrap';
 
 export default function ContasPagar() {
   const [form, setForm] = useState({
@@ -81,97 +81,105 @@ export default function ContasPagar() {
 
   return (
     <Layout>
-      <div className="container">
-        <h3>Contas a Pagar</h3>
+      <div className="container py-4">
+        <h3 className="mb-4">💸 Contas a Pagar</h3>
 
-        {/* Formulário */}
-        <form className="row g-3 mb-4" onSubmit={salvarRegistro}>
-          <div className="col-md-4">
-            <label className="form-label">Descrição</label>
-            <input
-              type="text"
-              className="form-control"
-              name="descricao"
-              value={form.descricao}
-              onChange={handleChange}
-              required
-            />
-          </div>
-          <div className="col-md-3">
-            <label className="form-label">Valor (R$)</label>
-            <input
-              type="number"
-              className="form-control"
-              name="valor"
-              value={form.valor}
-              onChange={handleChange}
-              required
-            />
-          </div>
-          <div className="col-md-3">
-            <label className="form-label">Destino</label>
-            <input
-              type="text"
-              className="form-control"
-              name="destino"
-              value={form.destino}
-              onChange={handleChange}
-              required
-            />
-          </div>
-          <div className="col-md-2 d-flex align-items-end">
-            <button type="submit" className="btn btn-danger w-100">
-              Registrar
-            </button>
-          </div>
-        </form>
+        {/* Card do formulário */}
+        <Card className="shadow-sm mb-4">
+          <Card.Body>
+            <h5 className="mb-3">Novo Lançamento</h5>
+            <Form className="row g-3" onSubmit={salvarRegistro}>
+              <Form.Group className="col-md-4">
+                <Form.Label>Descrição</Form.Label>
+                <Form.Control
+                  type="text"
+                  name="descricao"
+                  value={form.descricao}
+                  onChange={handleChange}
+                  required
+                />
+              </Form.Group>
+              <Form.Group className="col-md-3">
+                <Form.Label>Valor (R$)</Form.Label>
+                <Form.Control
+                  type="number"
+                  step="0.01"
+                  name="valor"
+                  value={form.valor}
+                  onChange={handleChange}
+                  required
+                />
+              </Form.Group>
+              <Form.Group className="col-md-3">
+                <Form.Label>Destino</Form.Label>
+                <Form.Control
+                  type="text"
+                  name="destino"
+                  value={form.destino}
+                  onChange={handleChange}
+                  required
+                />
+              </Form.Group>
+              <div className="col-md-2 d-flex align-items-end">
+                <Button type="submit" variant="danger" className="w-100">
+                  Registrar
+                </Button>
+              </div>
+            </Form>
+          </Card.Body>
+        </Card>
 
-        {/* Lista de despesas */}
-        <table className="table table-bordered">
-          <thead>
-            <tr>
-              <th>Descrição</th>
-              <th>Valor (R$)</th>
-              <th>Destino</th>
-              <th>Data</th>
-              <th>Status</th>
-              <th>Justificativa</th>
-              <th>Ações</th>              
-            </tr>
-          </thead>
-          <tbody>
-            {registros.map((r) => (
-              <tr key={r.id} className={r.cancelado ? 'table-danger' : ''}>
-                <td>{r.descricao}</td>
-                <td>{r.valor.toFixed(2)}</td>
-                <td>{r.destino}</td>
-                <td>{r.data?.toDate().toLocaleDateString()}</td>
-                <td>
-                  {r.cancelado ? (
-                    <span className="badge bg-danger">Cancelado</span>
-                  ) : (
-                    <span className="badge bg-success">Ativo</span>
-                  )}
-                </td>
-                <td>{r.cancelado ? r.justificativa : '-'}</td>
-                <td>
-                  {!r.cancelado && (
-                    <button
-                      className="btn btn-sm btn-outline-danger"
-                      onClick={() => abrirModalCancelamento(r)}
-                    >
-                      Cancelar
-                    </button>
-                  )}
-                </td>
-                
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        {/* Card da tabela */}
+        <Card className="shadow-sm">
+          <Card.Body>
+            <h5 className="mb-3">📋 Lançamentos Registrados</h5>
+            <Table hover bordered responsive>
+              <thead className="table-light">
+                <tr>
+                  <th>Descrição</th>
+                  <th>Valor (R$)</th>
+                  <th>Destino</th>
+                  <th>Data</th>
+                  <th>Status</th>
+                  <th>Justificativa</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {registros.map((r) => (
+                  <tr key={r.id} className={r.cancelado ? 'table-danger' : ''}>
+                    <td>{r.descricao}</td>
+                    <td>{r.valor.toFixed(2)}</td>
+                    <td>{r.destino}</td>
+                    <td>{r.data?.toDate().toLocaleDateString()}</td>
+                    <td>
+                      {r.cancelado ? (
+                        <Badge bg="danger">Cancelado</Badge>
+                      ) : (
+                        <Badge bg="success">Ativo</Badge>
+                      )}
+                    </td>
+                    <td>{r.cancelado ? r.justificativa : '-'}</td>
+                    <td>
+                      {!r.cancelado && (
+                        <Button
+                          size="sm"
+                          variant="outline-danger"
+                          onClick={() => abrirModalCancelamento(r)}
+                        >
+                          Cancelar
+                        </Button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          </Card.Body>
+        </Card>
 
         {/* Modal de Justificativa */}
-        <Modal show={showModal} onHide={() => setShowModal(false)}>
+        <Modal show={showModal} onHide={() => setShowModal(false)} centered>
           <Modal.Header closeButton>
             <Modal.Title>Cancelar Lançamento</Modal.Title>
           </Modal.Header>

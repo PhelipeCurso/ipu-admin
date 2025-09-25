@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
 import { db } from "../firebase/config";
-import { collection, addDoc, getDocs, deleteDoc, doc } from "firebase/firestore";
-import Layout from "../components/Layout";
-import { Button, Form, Table, Modal } from "react-bootstrap";
+import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc } from "firebase/firestore";
+import { Button, Form, Table, Modal, Card } from "react-bootstrap";
+import { BsPencilSquare, BsTrash, BsPlusCircle } from "react-icons/bs";
+
+import PdvNavbar from "../components/PdvNavbar";
 
 function ProdutosPdv() {
   const [produtos, setProdutos] = useState([]);
   const [showModal, setShowModal] = useState(false);
-  const [novoProduto, setNovoProduto] = useState({ nome: "", preco: "" });
+  const [produtoAtual, setProdutoAtual] = useState({ nome: "", preco: "" });
+  const [produtoEditando, setProdutoEditando] = useState(null);
 
   const carregarProdutos = async () => {
     const snap = await getDocs(collection(db, "produtos"));
@@ -18,13 +21,36 @@ function ProdutosPdv() {
     carregarProdutos();
   }, []);
 
+  const abrirNovoProduto = () => {
+    setProdutoAtual({ nome: "", preco: "" });
+    setProdutoEditando(null);
+    setShowModal(true);
+  };
+
+  const abrirEdicao = (produto) => {
+    setProdutoAtual({ nome: produto.nome, preco: produto.preco });
+    setProdutoEditando(produto);
+    setShowModal(true);
+  };
+
   const salvarProduto = async () => {
-    if (!novoProduto.nome || !novoProduto.preco) return;
-    await addDoc(collection(db, "produtos"), {
-      nome: novoProduto.nome,
-      preco: parseFloat(novoProduto.preco),
-    });
-    setNovoProduto({ nome: "", preco: "" });
+    if (!produtoAtual.nome || !produtoAtual.preco) return;
+
+    if (produtoEditando) {
+      const ref = doc(db, "produtos", produtoEditando.id);
+      await updateDoc(ref, {
+        nome: produtoAtual.nome,
+        preco: parseFloat(produtoAtual.preco),
+      });
+    } else {
+      await addDoc(collection(db, "produtos"), {
+        nome: produtoAtual.nome,
+        preco: parseFloat(produtoAtual.preco),
+      });
+    }
+
+    setProdutoAtual({ nome: "", preco: "" });
+    setProdutoEditando(null);
     setShowModal(false);
     carregarProdutos();
   };
@@ -37,44 +63,72 @@ function ProdutosPdv() {
   };
 
   return (
-    <Layout>
-      <div className="container">
-        <h3 className="mb-4">Produtos do PDV</h3>
-        <Button variant="primary" onClick={() => setShowModal(true)}>
-          Novo Produto
-        </Button>
+    <div>
+      {/* Navbar do PDV */}
+      <PdvNavbar />
 
-        <Table striped bordered hover className="mt-3">
-          <thead>
-            <tr>
-              <th>Nome</th>
-              <th>Preço</th>
-              <th>Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {produtos.map((p) => (
-              <tr key={p.id}>
-                <td>{p.nome}</td>
-                <td>R$ {p.preco.toFixed(2)}</td>
-                <td>
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    onClick={() => excluirProduto(p.id)}
-                  >
-                    Excluir
-                  </Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </Table>
+      <div className="container py-4">
+        <Card className="shadow-lg border-0">
+          <Card.Body>
+            <div className="d-flex justify-content-between align-items-center mb-4">
+              <h3 className="fw-bold text-primary mb-0">📦 Produtos do PDV</h3>
+              <Button variant="success" onClick={abrirNovoProduto}>
+                <BsPlusCircle className="me-2" />
+                Novo Produto
+              </Button>
+            </div>
 
-        {/* Modal Novo Produto */}
-        <Modal show={showModal} onHide={() => setShowModal(false)}>
-          <Modal.Header closeButton>
-            <Modal.Title>Novo Produto</Modal.Title>
+            <Table striped bordered hover responsive className="align-middle">
+              <thead className="table-dark">
+                <tr>
+                  <th>Nome</th>
+                  <th className="text-center">Preço</th>
+                  <th className="text-center">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {produtos.length === 0 ? (
+                  <tr>
+                    <td colSpan="3" className="text-center text-muted py-4">
+                      Nenhum produto cadastrado
+                    </td>
+                  </tr>
+                ) : (
+                  produtos.map((p) => (
+                    <tr key={p.id}>
+                      <td>{p.nome}</td>
+                      <td className="text-center">R$ {p.preco.toFixed(2)}</td>
+                      <td className="text-center">
+                        <div className="d-flex justify-content-center gap-2">
+                          <Button variant="warning" size="sm" onClick={() => abrirEdicao(p)}>
+                            <BsPencilSquare className="me-1" />
+                            Editar
+                          </Button>
+                          <Button variant="danger" size="sm" onClick={() => excluirProduto(p.id)}>
+                            <BsTrash className="me-1" />
+                            Excluir
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </Table>
+          </Card.Body>
+        </Card>
+
+        {/* Modal Novo/Editar Produto */}
+        <Modal
+          show={showModal}
+          onHide={() => setShowModal(false)}
+          centered
+          backdrop="static"
+        >
+          <Modal.Header closeButton className="bg-primary text-white">
+            <Modal.Title>
+              {produtoEditando ? "✏️ Editar Produto" : "➕ Novo Produto"}
+            </Modal.Title>
           </Modal.Header>
           <Modal.Body>
             <Form>
@@ -82,9 +136,10 @@ function ProdutosPdv() {
                 <Form.Label>Nome</Form.Label>
                 <Form.Control
                   type="text"
-                  value={novoProduto.nome}
+                  placeholder="Digite o nome do produto"
+                  value={produtoAtual.nome}
                   onChange={(e) =>
-                    setNovoProduto({ ...novoProduto, nome: e.target.value })
+                    setProdutoAtual({ ...produtoAtual, nome: e.target.value })
                   }
                 />
               </Form.Group>
@@ -93,9 +148,10 @@ function ProdutosPdv() {
                 <Form.Control
                   type="number"
                   step="0.01"
-                  value={novoProduto.preco}
+                  placeholder="Digite o preço"
+                  value={produtoAtual.preco}
                   onChange={(e) =>
-                    setNovoProduto({ ...novoProduto, preco: e.target.value })
+                    setProdutoAtual({ ...produtoAtual, preco: e.target.value })
                   }
                 />
               </Form.Group>
@@ -106,12 +162,12 @@ function ProdutosPdv() {
               Cancelar
             </Button>
             <Button variant="primary" onClick={salvarProduto}>
-              Salvar
+              {produtoEditando ? "Salvar Alterações" : "Adicionar Produto"}
             </Button>
           </Modal.Footer>
         </Modal>
       </div>
-    </Layout>
+    </div>
   );
 }
 

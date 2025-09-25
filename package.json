@@ -11,10 +11,10 @@
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
-    "bootstrap": "^5.3.7",
+    "bootstrap": "^5.3.8",
     "file-saver": "^2.0.5",
     "firebase": "^11.10.0",
-    "jspdf": "^3.0.1",
+    "jspdf": "^3.0.3",
     "jspdf-autotable": "^5.0.2",
     "lucide-react": "^0.544.0",
     "react": "^19.1.0",

@@ -1,0 +1,19 @@
+.painel-card {
+  transition: all 0.3s ease-in-out;
+  border-radius: 1rem;
+  background: #fff;
+}
+
+.painel-card:hover {
+  transform: translateY(-5px) scale(1.03);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+}
+
+.painel-icone {
+  transition: transform 0.3s ease-in-out;
+}
+
+.painel-card:hover .painel-icone {
+  transform: scale(1.2);
+}

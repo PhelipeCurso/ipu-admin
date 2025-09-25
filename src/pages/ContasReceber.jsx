@@ -10,7 +10,7 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 import Layout from '../components/Layout';
-import { Modal, Button, Form } from 'react-bootstrap';
+import { Modal, Button, Form, Card, Table, Badge } from 'react-bootstrap';
 
 export default function ContasReceber() {
   const [lancamentos, setLancamentos] = useState([]);
@@ -82,56 +82,66 @@ export default function ContasReceber() {
 
   return (
     <Layout>
-      <div className="container">
+      <div className="container py-4">
         <div className="d-flex justify-content-between align-items-center mb-4">
-          <h3 className="mb-0">Contas a Receber</h3>
+          <h3 className="mb-0">💰 Contas a Receber</h3>
           <Button variant="success" onClick={() => setShowNovoModal(true)}>
             + Novo Lançamento
           </Button>
         </div>
 
-        <table className="table table-bordered table-hover">
-          <thead className="table-light">
-            <tr>
-              <th>Data</th>
-              <th>Valor</th>
-              <th>Segmento</th>
-              <th>Status</th>
-              <th>Justificativa</th>
-              <th>Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {lancamentos.map(lanc => (
-              <tr key={lanc.id} className={lanc.cancelado ? 'table-danger' : ''}>
-                <td>{lanc.data?.toDate().toLocaleDateString()}</td>
-                <td>R$ {lanc.valor?.toFixed(2)}</td>
-                <td>{lanc.segmento || '-'}</td>
-                <td>
-                  {lanc.cancelado ? (
-                    <span className="badge bg-danger">Cancelado</span>
-                  ) : (
-                    <span className="badge bg-success">Ativo</span>
-                  )}
-                </td>
-                <td>{lanc.cancelado ? lanc.justificativa : '-'}</td>
-                <td>
-                  {!lanc.cancelado && (
-                    <button
-                      className="btn btn-sm btn-outline-danger"
-                      onClick={() => abrirModalCancelamento(lanc)}
-                    >
-                      Cancelar
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        {/* Card da Tabela */}
+        <Card className="shadow-sm">
+          <Card.Body>
+            <h5 className="mb-3">📋 Lançamentos</h5>
+            <Table hover bordered responsive>
+              <thead className="table-light">
+                <tr>
+                  <th>Data</th>
+                  <th>Valor</th>
+                  <th>Segmento</th>
+                  <th>Status</th>
+                  <th>Justificativa</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {lancamentos.map((lanc) => (
+                  <tr
+                    key={lanc.id}
+                    className={lanc.cancelado ? 'table-danger' : ''}
+                  >
+                    <td>{lanc.data?.toDate().toLocaleDateString()}</td>
+                    <td>R$ {lanc.valor?.toFixed(2)}</td>
+                    <td>{lanc.segmento || '-'}</td>
+                    <td>
+                      {lanc.cancelado ? (
+                        <Badge bg="danger">Cancelado</Badge>
+                      ) : (
+                        <Badge bg="success">Ativo</Badge>
+                      )}
+                    </td>
+                    <td>{lanc.cancelado ? lanc.justificativa : '-'}</td>
+                    <td>
+                      {!lanc.cancelado && (
+                        <Button
+                          size="sm"
+                          variant="outline-danger"
+                          onClick={() => abrirModalCancelamento(lanc)}
+                        >
+                          Cancelar
+                        </Button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          </Card.Body>
+        </Card>
 
         {/* Modal Cancelamento */}
-        <Modal show={showCancelModal} onHide={() => setShowCancelModal(false)}>
+        <Modal show={showCancelModal} onHide={() => setShowCancelModal(false)} centered>
           <Modal.Header closeButton>
             <Modal.Title>Cancelar Lançamento</Modal.Title>
           </Modal.Header>
@@ -159,7 +169,7 @@ export default function ContasReceber() {
         </Modal>
 
         {/* Modal Novo Lançamento */}
-        <Modal show={showNovoModal} onHide={() => setShowNovoModal(false)}>
+        <Modal show={showNovoModal} onHide={() => setShowNovoModal(false)} centered>
           <Modal.Header closeButton>
             <Modal.Title>Novo Lançamento</Modal.Title>
           </Modal.Header>
