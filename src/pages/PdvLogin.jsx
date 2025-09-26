@@ -28,7 +28,7 @@ function PdvLogin() {
       const user = snap.data();
       if (!user.usaPDV) throw new Error("Sem permissão para usar o PDV.");
 
-      navigate("/painelPdv", { state: { operador: user.nome, uid } });
+      navigate("/pdv/painelpdv", { state: { operador: user.nome, uid } });
     } catch (err) {
       console.error(err);
       setError("E-mail ou senha inválidos (Auth).");
@@ -54,9 +54,9 @@ function PdvLogin() {
 
       if (!user.usaPDV) throw new Error("Sem permissão para usar o PDV.");
       // 🔹 salva no AuthContext
-      setPdvUser({ uid, nome: user.nome, email: user.email });
+      setPdvUser({ uid, nome: user.nome, email: user.email ,usaPDV: user.usaPDV,});
 
-      navigate("/painelPdv", { state: { operador: user.nome, uid } });
+      navigate("/pdv/painelpdv", { state: { operador: user.nome, uid } });
     } catch (err) {
       console.error(err);
       setError(err.message);
@@ -78,7 +78,7 @@ function PdvLogin() {
       const user = snap.data();
       if (!user.usaPDV) throw new Error("Sem permissão para usar o PDV.");
 
-      navigate("/painelPdv", { state: { operador: user.nome, uid } });
+      navigate("/pdv/painelpdv", { state: { operador: user.nome, uid } });
     } catch (err) {
       console.error(err);
       setError("Falha ao logar com Google.");

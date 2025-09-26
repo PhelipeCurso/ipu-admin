@@ -5,7 +5,7 @@ function PdvNavbar() {
   return (
     <Navbar bg="dark" variant="dark" expand="lg" className="mb-4">
       <Container>
-        <Navbar.Brand as={Link} to="/pdv/painel">
+        <Navbar.Brand as={Link} to="/pdv/painelpdv">
           🛒 Painel PDV
         </Navbar.Brand>
         <Navbar.Toggle aria-controls="pdv-navbar" />

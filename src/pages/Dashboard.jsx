@@ -9,8 +9,8 @@ import GraficoFinanceiro from '../components/GraficoFinanceiro';
 export default function Dashboard() {
   const [mes, setMes] = useState('');
   const [ano, setAno] = useState('');
-  const [tipoGrafico, setTipoGrafico] = useState('barra'); // 'barra' | 'linha' | 'pizza'
-  const [totais, setTotais] = useState({ receitas: 0, despesas: 0, doacoes: 0 });
+  const [tipoGrafico, setTipoGrafico] = useState('barra');
+  const [totais, setTotais] = useState({ receitas: 0, despesas: 0, doacoes: 0, movimentoPDV: 0 });
   const [metaAtiva, setMetaAtiva] = useState(null);
 
   const filtrarPorMesAno = (data) => {
@@ -27,10 +27,11 @@ export default function Dashboard() {
   };
 
   const carregarTotais = async () => {
-    const [rSnap, dSnap, doaSnap] = await Promise.all([
+    const [rSnap, dSnap, doaSnap, pdvSnap] = await Promise.all([
       getDocs(collection(db, 'contas_receber')),
       getDocs(collection(db, 'contas_pagar')),
       getDocs(collection(db, 'doacoes')),
+      getDocs(collection(db, 'movimentoPDV')),
     ]);
 
     const receitas = rSnap.docs
@@ -45,7 +46,11 @@ export default function Dashboard() {
       .filter((doc) => !doc.data().cancelado && filtrarPorMesAno(doc.data().data))
       .reduce((sum, doc) => sum + (doc.data().valor || 0), 0);
 
-    setTotais({ receitas, despesas, doacoes });
+    const movimentoPDV = pdvSnap.docs
+      .filter((doc) => filtrarPorMesAno(doc.data().data))
+      .reduce((sum, doc) => sum + (doc.data().valor || 0), 0);
+
+    setTotais({ receitas, despesas, doacoes, movimentoPDV });
   };
 
   useEffect(() => {
@@ -53,12 +58,13 @@ export default function Dashboard() {
     carregarMetaAtiva();
   }, [mes, ano]);
 
-  const saldo = totais.receitas + totais.doacoes - totais.despesas;
+  const saldo = totais.receitas + totais.doacoes + totais.movimentoPDV - totais.despesas;
 
   const dadosGrafico = [
     { nome: 'Receitas', valor: Number(totais.receitas) || 0 },
     { nome: 'Despesas', valor: Number(totais.despesas) || 0 },
     { nome: 'Doações', valor: Number(totais.doacoes) || 0 },
+    { nome: 'Movimento PDV', valor: Number(totais.movimentoPDV) || 0 },
   ];
 
   const exportarPDF = () => {
@@ -77,11 +83,12 @@ export default function Dashboard() {
 
     autoTable(doc, {
       startY: 40,
-      head: [['Receitas', 'Despesas', 'Doações', 'Saldo Atual']],
+      head: [['Receitas', 'Despesas', 'Doações', 'Movimento PDV', 'Saldo Atual']],
       body: [[
         `R$ ${totais.receitas.toFixed(2)}`,
         `R$ ${totais.despesas.toFixed(2)}`,
         `R$ ${totais.doacoes.toFixed(2)}`,
+        `R$ ${totais.movimentoPDV.toFixed(2)}`,
         `R$ ${saldo.toFixed(2)}`,
       ]],
     });
@@ -159,6 +166,18 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="col-md-3">
+            <div className="card text-bg-warning shadow-sm">
+              <div className="card-body">
+                <h6>Movimento PDV</h6>
+                <h5>R$ {totais.movimentoPDV.toFixed(2)}</h5>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Saldo */}
+        <div className="row g-3 mb-4">
+          <div className="col-md-12">
             <div className={`card shadow-sm ${saldo >= 0 ? 'text-bg-success' : 'text-bg-danger'}`}>
               <div className="card-body">
                 <h6>Saldo Atual</h6>
@@ -173,19 +192,29 @@ export default function Dashboard() {
           <div className="card shadow-sm mb-4">
             <div className="card-body">
               <h6>🎯 Meta de Receita Ativa: {metaAtiva.descricao}</h6>
-              <p>
-                Arrecadado: <strong>R$ {totais.receitas.toFixed(2)}</strong> de{' '}
-                <strong>R$ {metaAtiva.valor.toFixed(2)}</strong>
-              </p>
-              <div className="progress" style={{ height: '20px' }}>
-                <div
-                  className="progress-bar progress-bar-striped progress-bar-animated"
-                  role="progressbar"
-                  style={{ width: `${Math.min(100, (totais.receitas / metaAtiva.valor) * 100)}%` }}
-                >
-                  {Math.min(100, ((totais.receitas / metaAtiva.valor) * 100)).toFixed(1)}%
-                </div>
-              </div>
+              {(() => {
+                const arrecadado = totais.receitas + totais.doacoes + totais.movimentoPDV;
+                const perc = Math.min(100, (arrecadado / metaAtiva.valor) * 100);
+
+                return (
+                  <>
+                    <p>
+                      Arrecadado: <strong>R$ {arrecadado.toFixed(2)}</strong> de{' '}
+                      <strong>R$ {metaAtiva.valor.toFixed(2)}</strong>
+                    </p>
+                    <div className="progress" style={{ height: '20px' }}>
+                      <div
+                        className="progress-bar progress-bar-striped progress-bar-animated bg-success"
+                        role="progressbar"
+                        style={{ width: `${perc}%` }}
+                      >
+                        {perc.toFixed(1)}%
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
+
             </div>
           </div>
         )}

@@ -67,9 +67,11 @@ function PontoDeVenda() {
       : 0;
 
   const finalizarVenda = async () => {
-    if (carrinho.length === 0) return;
+  if (carrinho.length === 0) return;
 
-    await addDoc(collection(db, "pedidos"), {
+  try {
+    // 🔹 Salvar pedido
+    const pedidoRef = await addDoc(collection(db, "pedidos"), {
       operador,
       itens: carrinho.map((p) => ({
         nome: p.nome,
@@ -84,13 +86,31 @@ function PontoDeVenda() {
       data: new Date(),
     });
 
+    // 🔹 Registrar também no movimento PDV (financeiro)
+    await addDoc(collection(db, "movimentoPDV"), {
+      descricao: "Venda PDV",
+      valor: total,
+      data: new Date(),
+      operador,
+      formaPagamento: pagamento,
+      referencia: pedidoRef.id, // agora funciona 👍
+    });
+
+    // 🔹 Chamar impressão
     await imprimirPedido();
 
+    // 🔹 Resetar estados
     setCarrinho([]);
     setValorRecebido("");
     setShowModal(false);
-    alert("Venda registrada com sucesso!");
-  };
+
+    alert("✅ Venda registrada com sucesso!");
+  } catch (err) {
+    console.error("Erro ao registrar venda:", err);
+    alert("❌ Ocorreu um erro ao registrar a venda. Verifique o console.");
+  }
+};
+
 
   const imprimirPedido = async () => {
     const ref = doc(db, "configuracoes", "recibo");
@@ -102,13 +122,12 @@ function PontoDeVenda() {
       cfg.formato === "58mm"
         ? "58mm"
         : cfg.formato === "80mm"
-        ? "80mm"
-        : "100%";
+          ? "80mm"
+          : "100%";
 
     let conteudo = `
-    <div style="font-family: monospace; text-align: center; width:${largura}; font-size:${
-      cfg.formato === "A4" ? "14px" : "12px"
-    };">
+    <div style="font-family: monospace; text-align: center; width:${largura}; font-size:${cfg.formato === "A4" ? "14px" : "12px"
+      };">
       ${cfg.logoUrl ? `<img src="${cfg.logoUrl}" style="max-width:80px;"/><br/>` : ""}
       <h3>${cfg.cabecalho || "Recibo PDV"}</h3>
       <p>
@@ -116,28 +135,26 @@ function PontoDeVenda() {
         ${cfg.telefone || ""}
       </p>
       <hr/>
-      ${
-        cfg.mostrarProdutos
-          ? `<ul style="text-align:left; list-style:none; padding:0;">
+      ${cfg.mostrarProdutos
+        ? `<ul style="text-align:left; list-style:none; padding:0;">
               ${carrinho
-                .map(
-                  (p) =>
-                    `<li>${p.nome} x${p.qtd} .... R$ ${(p.qtd * p.preco).toFixed(
-                      2
-                    )}</li>`
-                )
-                .join("")}
+          .map(
+            (p) =>
+              `<li>${p.nome} x${p.qtd} .... R$ ${(p.qtd * p.preco).toFixed(
+                2
+              )}</li>`
+          )
+          .join("")}
             </ul>`
-          : ""
+        : ""
       }
       ${cfg.mostrarTotal ? `<h4>Total: R$ ${total.toFixed(2)}</h4>` : ""}
       ${cfg.mostrarPagamento ? `<p>Pagamento: ${pagamento}</p>` : ""}
-      ${
-        cfg.mostrarTroco && pagamento === "dinheiro"
-          ? `<p>Recebido: R$ ${parseFloat(valorRecebido || 0).toFixed(
-              2
-            )} | Troco: R$ ${troco.toFixed(2)}</p>`
-          : ""
+      ${cfg.mostrarTroco && pagamento === "dinheiro"
+        ? `<p>Recebido: R$ ${parseFloat(valorRecebido || 0).toFixed(
+          2
+        )} | Troco: R$ ${troco.toFixed(2)}</p>`
+        : ""
       }
       ${cfg.mostrarOperador ? `<p>Operador: ${operador}</p>` : ""}
       ${cfg.mostrarData ? `<p>${new Date().toLocaleString()}</p>` : ""}
@@ -200,187 +217,187 @@ function PontoDeVenda() {
         <h2 className="mb-3">💳 Ponto de Venda</h2>
         <p className="text-muted">Operador: {operador}</p>
 
-      <div className="row g-4">
-        {/* Lista de Produtos */}
-        <div className="col-md-8">
-          <Card className="shadow-sm">
-            <Card.Header className="bg-primary text-white">
-              Produtos
-            </Card.Header>
-            <Card.Body>
-              <div className="d-flex flex-wrap gap-2">
-                {produtos.map((p) => (
-                  <Button
-                    key={p.id}
-                    variant="outline-primary"
-                    className="btn-lg"
-                    onClick={() => adicionarAoCarrinho(p)}
-                  >
-                    {p.nome} <br />
-                    <small>R$ {p.preco.toFixed(2)}</small>
-                  </Button>
-                ))}
-              </div>
-            </Card.Body>
-          </Card>
-        </div>
-
-        {/* Carrinho */}
-        <div className="col-md-4">
-          <Card className="shadow-sm">
-            <Card.Header className="bg-success text-white">
-              Carrinho
-            </Card.Header>
-            <ListGroup variant="flush">
-              {carrinho.length === 0 && (
-                <ListGroup.Item className="text-center text-muted">
-                  Nenhum item adicionado
-                </ListGroup.Item>
-              )}
-              {carrinho.map((item) => (
-                <ListGroup.Item
-                  key={item.id}
-                  className="d-flex justify-content-between align-items-center"
-                >
-                  <div>
-                    {item.nome} x{item.qtd}
-                  </div>
-                  <div>
-                    <strong>R$ {(item.qtd * item.preco).toFixed(2)}</strong>
-                  </div>
-                  <div className="btn-group ms-2">
+        <div className="row g-4">
+          {/* Lista de Produtos */}
+          <div className="col-md-8">
+            <Card className="shadow-sm">
+              <Card.Header className="bg-primary text-white">
+                Produtos
+              </Card.Header>
+              <Card.Body>
+                <div className="d-flex flex-wrap gap-2">
+                  {produtos.map((p) => (
                     <Button
-                      size="sm"
-                      variant="warning"
-                      onClick={() => removerUmaUnidade(item.id)}
+                      key={p.id}
+                      variant="outline-primary"
+                      className="btn-lg"
+                      onClick={() => adicionarAoCarrinho(p)}
                     >
-                      -
+                      {p.nome} <br />
+                      <small>R$ {p.preco.toFixed(2)}</small>
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="danger"
-                      onClick={() => removerDoCarrinho(item.id)}
-                    >
-                      X
-                    </Button>
-                  </div>
-                </ListGroup.Item>
-              ))}
-            </ListGroup>
-            <Card.Footer>
-              <h5>Total: R$ {total.toFixed(2)}</h5>
-              <div className="d-flex flex-column gap-2 mt-2">
-                <Button
-                  variant="success"
-                  onClick={() => setShowModal(true)}
-                  disabled={carrinho.length === 0}
-                >
-                  ✅ Finalizar Venda
-                </Button>
-                <Button
-                  variant="dark"
-                  onClick={calcularResumoCaixa}
-                >
-                  📊 Fechamento de Caixa
-                </Button>
-              </div>
-            </Card.Footer>
-          </Card>
-        </div>
-      </div>
+                  ))}
+                </div>
+              </Card.Body>
+            </Card>
+          </div>
 
-      {/* Modal de Pagamento */}
-      <Modal show={showModal} onHide={() => setShowModal(false)}>
-        <Modal.Header closeButton>
-          <Modal.Title>Finalizar Venda</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form>
-            <Form.Label>Forma de Pagamento</Form.Label>
-            <Form.Select
-              value={pagamento}
-              onChange={(e) => {
-                setPagamento(e.target.value);
-                setValorRecebido("");
-              }}
-            >
-              <option value="dinheiro">Dinheiro</option>
-              <option value="cartao">Cartão</option>
-              <option value="pix">Pix</option>
-            </Form.Select>
-
-            <h5 className="mt-3">Total: R$ {total.toFixed(2)}</h5>
-
-            {pagamento === "dinheiro" && (
-              <div className="mt-3">
-                <Form.Label>Valor Recebido</Form.Label>
-                <Form.Control
-                  type="number"
-                  step="0.01"
-                  value={valorRecebido}
-                  onChange={(e) => setValorRecebido(e.target.value)}
-                />
-                {valorRecebido && (
-                  <div className="mt-2">
-                    {troco < 0 ? (
-                      <p className="text-danger">
-                        ❌ Faltam R$ {Math.abs(troco).toFixed(2)}
-                      </p>
-                    ) : (
-                      <p className="text-success">
-                        ✅ Troco: R$ {troco.toFixed(2)}
-                      </p>
-                    )}
-                  </div>
+          {/* Carrinho */}
+          <div className="col-md-4">
+            <Card className="shadow-sm">
+              <Card.Header className="bg-success text-white">
+                Carrinho
+              </Card.Header>
+              <ListGroup variant="flush">
+                {carrinho.length === 0 && (
+                  <ListGroup.Item className="text-center text-muted">
+                    Nenhum item adicionado
+                  </ListGroup.Item>
                 )}
-              </div>
-            )}
-          </Form>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowModal(false)}>
-            Cancelar
-          </Button>
-          <Button
-            variant="primary"
-            onClick={finalizarVenda}
-            disabled={
-              pagamento === "dinheiro" &&
-              (valorRecebido === "" || troco < 0)
-            }
-          >
-            Confirmar Venda
-          </Button>
-        </Modal.Footer>
-      </Modal>
+                {carrinho.map((item) => (
+                  <ListGroup.Item
+                    key={item.id}
+                    className="d-flex justify-content-between align-items-center"
+                  >
+                    <div>
+                      {item.nome} x{item.qtd}
+                    </div>
+                    <div>
+                      <strong>R$ {(item.qtd * item.preco).toFixed(2)}</strong>
+                    </div>
+                    <div className="btn-group ms-2">
+                      <Button
+                        size="sm"
+                        variant="warning"
+                        onClick={() => removerUmaUnidade(item.id)}
+                      >
+                        -
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="danger"
+                        onClick={() => removerDoCarrinho(item.id)}
+                      >
+                        X
+                      </Button>
+                    </div>
+                  </ListGroup.Item>
+                ))}
+              </ListGroup>
+              <Card.Footer>
+                <h5>Total: R$ {total.toFixed(2)}</h5>
+                <div className="d-flex flex-column gap-2 mt-2">
+                  <Button
+                    variant="success"
+                    onClick={() => setShowModal(true)}
+                    disabled={carrinho.length === 0}
+                  >
+                    ✅ Finalizar Venda
+                  </Button>
+                  <Button
+                    variant="dark"
+                    onClick={calcularResumoCaixa}
+                  >
+                    📊 Fechamento de Caixa
+                  </Button>
+                </div>
+              </Card.Footer>
+            </Card>
+          </div>
+        </div>
 
-      {/* Modal de Fechamento de Caixa */}
-      <Modal show={showCaixa} onHide={() => setShowCaixa(false)}>
-        <Modal.Header closeButton>
-          <Modal.Title>📊 Fechamento de Caixa</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {resumo ? (
-            <>
-              <p><strong>Dinheiro:</strong> R$ {resumo.dinheiro.toFixed(2)}</p>
-              <p><strong>Cartão:</strong> R$ {resumo.cartao.toFixed(2)}</p>
-              <p><strong>Pix:</strong> R$ {resumo.pix.toFixed(2)}</p>
-              <hr />
-              <h5>Total do Dia: R$ {resumo.total.toFixed(2)}</h5>
-            </>
-          ) : (
-            <p>Carregando resumo...</p>
-          )}
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowCaixa(false)}>
-            Fechar
-          </Button>
-          <Button variant="success" onClick={fecharCaixa}>
-            ✅ Registrar Fechamento
-          </Button>
-        </Modal.Footer>
-      </Modal>
+        {/* Modal de Pagamento */}
+        <Modal show={showModal} onHide={() => setShowModal(false)}>
+          <Modal.Header closeButton>
+            <Modal.Title>Finalizar Venda</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <Form>
+              <Form.Label>Forma de Pagamento</Form.Label>
+              <Form.Select
+                value={pagamento}
+                onChange={(e) => {
+                  setPagamento(e.target.value);
+                  setValorRecebido("");
+                }}
+              >
+                <option value="dinheiro">Dinheiro</option>
+                <option value="cartao">Cartão</option>
+                <option value="pix">Pix</option>
+              </Form.Select>
+
+              <h5 className="mt-3">Total: R$ {total.toFixed(2)}</h5>
+
+              {pagamento === "dinheiro" && (
+                <div className="mt-3">
+                  <Form.Label>Valor Recebido</Form.Label>
+                  <Form.Control
+                    type="number"
+                    step="0.01"
+                    value={valorRecebido}
+                    onChange={(e) => setValorRecebido(e.target.value)}
+                  />
+                  {valorRecebido && (
+                    <div className="mt-2">
+                      {troco < 0 ? (
+                        <p className="text-danger">
+                          ❌ Faltam R$ {Math.abs(troco).toFixed(2)}
+                        </p>
+                      ) : (
+                        <p className="text-success">
+                          ✅ Troco: R$ {troco.toFixed(2)}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </Form>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={() => setShowModal(false)}>
+              Cancelar
+            </Button>
+            <Button
+              variant="primary"
+              onClick={finalizarVenda}
+              disabled={
+                pagamento === "dinheiro" &&
+                (valorRecebido === "" || troco < 0)
+              }
+            >
+              Confirmar Venda
+            </Button>
+          </Modal.Footer>
+        </Modal>
+
+        {/* Modal de Fechamento de Caixa */}
+        <Modal show={showCaixa} onHide={() => setShowCaixa(false)}>
+          <Modal.Header closeButton>
+            <Modal.Title>📊 Fechamento de Caixa</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            {resumo ? (
+              <>
+                <p><strong>Dinheiro:</strong> R$ {resumo.dinheiro.toFixed(2)}</p>
+                <p><strong>Cartão:</strong> R$ {resumo.cartao.toFixed(2)}</p>
+                <p><strong>Pix:</strong> R$ {resumo.pix.toFixed(2)}</p>
+                <hr />
+                <h5>Total do Dia: R$ {resumo.total.toFixed(2)}</h5>
+              </>
+            ) : (
+              <p>Carregando resumo...</p>
+            )}
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={() => setShowCaixa(false)}>
+              Fechar
+            </Button>
+            <Button variant="success" onClick={fecharCaixa}>
+              ✅ Registrar Fechamento
+            </Button>
+          </Modal.Footer>
+        </Modal>
       </div>
     </div>
   );

@@ -47,6 +47,9 @@ export default function Sidebar() {
           <li>
             <Link className="dropdown-item" to="/pdv/criarsenhapdv">Criar Senha PDV</Link>
           </li>
+          <li>
+            <Link className="dropdown-item" to="/movimento-pdv">Movimento PDV</Link>
+          </li>
         </ul>
       </div>
     </div>
