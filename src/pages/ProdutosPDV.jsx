@@ -1,16 +1,26 @@
 import { useEffect, useState } from "react";
 import { db } from "../firebase/config";
-import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc } from "firebase/firestore";
-import { Button, Form, Table, Modal, Card } from "react-bootstrap";
-import { BsPencilSquare, BsTrash, BsPlusCircle } from "react-icons/bs";
-
+import {
+  collection,
+  getDocs,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
+} from "firebase/firestore";
+import { Button, Table, Modal, Form } from "react-bootstrap";
 import PdvNavbar from "../components/PdvNavbar";
 
-function ProdutosPdv() {
+function ProdutosPDV() {
   const [produtos, setProdutos] = useState([]);
   const [showModal, setShowModal] = useState(false);
-  const [produtoAtual, setProdutoAtual] = useState({ nome: "", preco: "" });
-  const [produtoEditando, setProdutoEditando] = useState(null);
+  const [editando, setEditando] = useState(null);
+  const [form, setForm] = useState({
+    nome: "",
+    preco: "",
+    estoque: 0,
+    controlaEstoque: false,
+  });
 
   const carregarProdutos = async () => {
     const snap = await getDocs(collection(db, "produtos"));
@@ -21,42 +31,49 @@ function ProdutosPdv() {
     carregarProdutos();
   }, []);
 
-  const abrirNovoProduto = () => {
-    setProdutoAtual({ nome: "", preco: "" });
-    setProdutoEditando(null);
-    setShowModal(true);
-  };
-
-  const abrirEdicao = (produto) => {
-    setProdutoAtual({ nome: produto.nome, preco: produto.preco });
-    setProdutoEditando(produto);
-    setShowModal(true);
-  };
-
-  const salvarProduto = async () => {
-    if (!produtoAtual.nome || !produtoAtual.preco) return;
-
-    if (produtoEditando) {
-      const ref = doc(db, "produtos", produtoEditando.id);
-      await updateDoc(ref, {
-        nome: produtoAtual.nome,
-        preco: parseFloat(produtoAtual.preco),
+  const abrirModal = (produto = null) => {
+    if (produto) {
+      setEditando(produto.id);
+      setForm({
+        nome: produto.nome,
+        preco: produto.preco,
+        estoque: produto.estoque || 0,
+        controlaEstoque: produto.controlaEstoque || false,
       });
     } else {
-      await addDoc(collection(db, "produtos"), {
-        nome: produtoAtual.nome,
-        preco: parseFloat(produtoAtual.preco),
-      });
+      setEditando(null);
+      setForm({ nome: "", preco: "", estoque: 0, controlaEstoque: false });
+    }
+    setShowModal(true);
+  };
+
+  const salvarProduto = async (e) => {
+    e.preventDefault();
+
+    if (form.controlaEstoque && form.estoque < 0) {
+      alert("❌ O estoque não pode ser negativo.");
+      return;
     }
 
-    setProdutoAtual({ nome: "", preco: "" });
-    setProdutoEditando(null);
+    const dados = {
+      nome: form.nome,
+      preco: parseFloat(form.preco),
+      estoque: form.controlaEstoque ? parseInt(form.estoque, 10) : null,
+      controlaEstoque: form.controlaEstoque,
+    };
+
+    if (editando) {
+      await updateDoc(doc(db, "produtos", editando), dados);
+    } else {
+      await addDoc(collection(db, "produtos"), dados);
+    }
+
     setShowModal(false);
     carregarProdutos();
   };
 
   const excluirProduto = async (id) => {
-    if (window.confirm("Deseja excluir este produto?")) {
+    if (window.confirm("Tem certeza que deseja excluir este produto?")) {
       await deleteDoc(doc(db, "produtos", id));
       carregarProdutos();
     }
@@ -64,83 +81,68 @@ function ProdutosPdv() {
 
   return (
     <div>
-      {/* Navbar do PDV */}
       <PdvNavbar />
 
       <div className="container py-4">
-        <Card className="shadow-lg border-0">
-          <Card.Body>
-            <div className="d-flex justify-content-between align-items-center mb-4">
-              <h3 className="fw-bold text-primary mb-0">📦 Produtos do PDV</h3>
-              <Button variant="success" onClick={abrirNovoProduto}>
-                <BsPlusCircle className="me-2" />
-                Novo Produto
-              </Button>
-            </div>
+        <div className="d-flex justify-content-between align-items-center mb-3">
+          <h3>📦 Produtos PDV</h3>
+          <Button onClick={() => abrirModal()}>➕ Novo Produto</Button>
+        </div>
 
-            <Table striped bordered hover responsive className="align-middle">
-              <thead className="table-dark">
-                <tr>
-                  <th>Nome</th>
-                  <th className="text-center">Preço</th>
-                  <th className="text-center">Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {produtos.length === 0 ? (
-                  <tr>
-                    <td colSpan="3" className="text-center text-muted py-4">
-                      Nenhum produto cadastrado
-                    </td>
-                  </tr>
-                ) : (
-                  produtos.map((p) => (
-                    <tr key={p.id}>
-                      <td>{p.nome}</td>
-                      <td className="text-center">R$ {p.preco.toFixed(2)}</td>
-                      <td className="text-center">
-                        <div className="d-flex justify-content-center gap-2">
-                          <Button variant="warning" size="sm" onClick={() => abrirEdicao(p)}>
-                            <BsPencilSquare className="me-1" />
-                            Editar
-                          </Button>
-                          <Button variant="danger" size="sm" onClick={() => excluirProduto(p.id)}>
-                            <BsTrash className="me-1" />
-                            Excluir
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </Table>
-          </Card.Body>
-        </Card>
+        <Table striped bordered hover>
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Preço</th>
+              <th>Estoque</th>
+              <th>Controla Estoque</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {produtos.map((p) => (
+              <tr key={p.id}>
+                <td>{p.nome}</td>
+                <td>R$ {p.preco.toFixed(2)}</td>
+                <td>{p.controlaEstoque ? p.estoque : "∞"}</td>
+                <td>{p.controlaEstoque ? "Sim" : "Não"}</td>
+                <td>
+                  <Button
+                    size="sm"
+                    variant="warning"
+                    onClick={() => abrirModal(p)}
+                  >
+                    Editar
+                  </Button>{" "}
+                  <Button
+                    size="sm"
+                    variant="danger"
+                    onClick={() => excluirProduto(p.id)}
+                  >
+                    Excluir
+                  </Button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
 
-        {/* Modal Novo/Editar Produto */}
-        <Modal
-          show={showModal}
-          onHide={() => setShowModal(false)}
-          centered
-          backdrop="static"
-        >
-          <Modal.Header closeButton className="bg-primary text-white">
+        {/* Modal */}
+        <Modal show={showModal} onHide={() => setShowModal(false)}>
+          <Modal.Header closeButton>
             <Modal.Title>
-              {produtoEditando ? "✏️ Editar Produto" : "➕ Novo Produto"}
+              {editando ? "Editar Produto" : "Novo Produto"}
             </Modal.Title>
           </Modal.Header>
           <Modal.Body>
-            <Form>
+            <Form onSubmit={salvarProduto}>
               <Form.Group className="mb-3">
                 <Form.Label>Nome</Form.Label>
                 <Form.Control
                   type="text"
-                  placeholder="Digite o nome do produto"
-                  value={produtoAtual.nome}
-                  onChange={(e) =>
-                    setProdutoAtual({ ...produtoAtual, nome: e.target.value })
-                  }
+                  value={form.nome}
+                  onChange={(e) => setForm({ ...form, nome: e.target.value })}
+                  required
                 />
               </Form.Group>
               <Form.Group className="mb-3">
@@ -148,27 +150,51 @@ function ProdutosPdv() {
                 <Form.Control
                   type="number"
                   step="0.01"
-                  placeholder="Digite o preço"
-                  value={produtoAtual.preco}
+                  value={form.preco}
+                  onChange={(e) => setForm({ ...form, preco: e.target.value })}
+                  required
+                />
+              </Form.Group>
+              <Form.Group className="mb-3">
+                <Form.Check
+                  type="checkbox"
+                  label="Controla Estoque"
+                  checked={form.controlaEstoque}
                   onChange={(e) =>
-                    setProdutoAtual({ ...produtoAtual, preco: e.target.value })
+                    setForm({ ...form, controlaEstoque: e.target.checked })
                   }
                 />
               </Form.Group>
+              {form.controlaEstoque && (
+                <Form.Group className="mb-3">
+                  <Form.Label>Quantidade em Estoque</Form.Label>
+                  <Form.Control
+                    type="number"
+                    value={form.estoque}
+                    min="0"
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        estoque: parseInt(e.target.value, 10),
+                      })
+                    }
+                  />
+                </Form.Group>
+              )}
+              <div className="d-flex justify-content-end">
+                <Button variant="secondary" onClick={() => setShowModal(false)}>
+                  Cancelar
+                </Button>
+                <Button type="submit" variant="primary" className="ms-2">
+                  Salvar
+                </Button>
+              </div>
             </Form>
           </Modal.Body>
-          <Modal.Footer>
-            <Button variant="secondary" onClick={() => setShowModal(false)}>
-              Cancelar
-            </Button>
-            <Button variant="primary" onClick={salvarProduto}>
-              {produtoEditando ? "Salvar Alterações" : "Adicionar Produto"}
-            </Button>
-          </Modal.Footer>
         </Modal>
       </div>
     </div>
   );
 }
 
-export default ProdutosPdv;
+export default ProdutosPDV;

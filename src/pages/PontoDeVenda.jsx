@@ -6,13 +6,12 @@ import {
   addDoc,
   getDoc,
   doc,
+  updateDoc,
+  runTransaction,
 } from "firebase/firestore";
 import { useLocation } from "react-router-dom";
 import { Modal, Button, Form, Card, ListGroup } from "react-bootstrap";
 import PdvNavbar from "../components/PdvNavbar";
-
-
-
 
 function PontoDeVenda() {
   const [produtos, setProdutos] = useState([]);
@@ -20,26 +19,34 @@ function PontoDeVenda() {
   const [showModal, setShowModal] = useState(false);
   const [pagamento, setPagamento] = useState("dinheiro");
   const [valorRecebido, setValorRecebido] = useState("");
-
   const [showCaixa, setShowCaixa] = useState(false);
   const [resumo, setResumo] = useState(null);
 
   const location = useLocation();
   const operador = location.state?.operador || "Operador";
 
-  // Carregar produtos
+  // 🔹 Carregar produtos
+  const carregarProdutos = async () => {
+    const snap = await getDocs(collection(db, "produtos"));
+    setProdutos(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+  };
+
   useEffect(() => {
-    const carregarProdutos = async () => {
-      const snap = await getDocs(collection(db, "produtos"));
-      setProdutos(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-    };
     carregarProdutos();
   }, []);
 
   const adicionarAoCarrinho = (produto) => {
+    if (produto.controlaEstoque && produto.estoque <= 0) {
+      alert(`❌ O produto "${produto.nome}" está sem estoque.`);
+      return;
+    }
     setCarrinho((prev) => {
       const existente = prev.find((p) => p.id === produto.id);
       if (existente) {
+        if (produto.controlaEstoque && existente.qtd >= produto.estoque) {
+          alert(`❌ Estoque insuficiente para "${produto.nome}".`);
+          return prev;
+        }
         return prev.map((p) =>
           p.id === produto.id ? { ...p, qtd: p.qtd + 1 } : p
         );
@@ -67,101 +74,125 @@ function PontoDeVenda() {
       : 0;
 
   const finalizarVenda = async () => {
-  if (carrinho.length === 0) return;
+    if (carrinho.length === 0) return;
 
-  try {
-    // 🔹 Salvar pedido
-    const pedidoRef = await addDoc(collection(db, "pedidos"), {
-      operador,
-      itens: carrinho.map((p) => ({
-        nome: p.nome,
-        qtd: p.qtd,
-        valorUnit: p.preco,
-      })),
-      total,
-      pagamento,
-      valorRecebido:
-        pagamento === "dinheiro" ? parseFloat(valorRecebido) : total,
-      troco: pagamento === "dinheiro" ? troco : 0,
-      data: new Date(),
-    });
+    try {
+      // 🔹 Salvar pedido
+      const pedidoRef = await addDoc(collection(db, "pedidos"), {
+        operador,
+        itens: carrinho.map((p) => ({
+          nome: p.nome,
+          qtd: p.qtd,
+          valorUnit: p.preco,
+        })),
+        total,
+        pagamento,
+        valorRecebido:
+          pagamento === "dinheiro" ? parseFloat(valorRecebido) : total,
+        troco: pagamento === "dinheiro" ? troco : 0,
+        data: new Date(),
+      });
 
-    // 🔹 Registrar também no movimento PDV (financeiro)
-    await addDoc(collection(db, "movimentoPDV"), {
-      descricao: "Venda PDV",
-      valor: total,
-      data: new Date(),
-      operador,
-      formaPagamento: pagamento,
-      referencia: pedidoRef.id, // agora funciona 👍
-    });
+      // 🔹 Atualizar estoque com TRANSACTION
+      for (const item of carrinho) {
+        if (item.controlaEstoque) {
+          const ref = doc(db, "produtos", item.id);
+          await runTransaction(db, async (transaction) => {
+            const snap = await transaction.get(ref);
+            if (!snap.exists()) throw new Error("Produto não encontrado.");
 
-    // 🔹 Chamar impressão
-    await imprimirPedido();
+            const atual = snap.data().estoque || 0;
+            if (atual < item.qtd) {
+              throw new Error(
+                `❌ Estoque insuficiente para "${item.nome}". Venda cancelada.`
+              );
+            }
 
-    // 🔹 Resetar estados
-    setCarrinho([]);
-    setValorRecebido("");
-    setShowModal(false);
+            transaction.update(ref, { estoque: atual - item.qtd });
+          });
+        }
+      }
 
-    alert("✅ Venda registrada com sucesso!");
-  } catch (err) {
-    console.error("Erro ao registrar venda:", err);
-    alert("❌ Ocorreu um erro ao registrar a venda. Verifique o console.");
-  }
-};
+      // 🔹 Registrar também no movimento PDV
+      await addDoc(collection(db, "movimentoPDV"), {
+        descricao: "Venda PDV",
+        valor: total,
+        data: new Date(),
+        operador,
+        formaPagamento: pagamento,
+        referencia: pedidoRef.id,
+      });
 
+      // 🔹 Chamar impressão
+      await imprimirPedido();
+
+      // 🔹 Resetar estados
+      setCarrinho([]);
+      setValorRecebido("");
+      setShowModal(false);
+
+      // 🔹 Atualizar lista de produtos para refletir estoque atualizado
+      await carregarProdutos();
+
+      alert("✅ Venda registrada com sucesso!");
+    } catch (err) {
+      console.error("Erro ao registrar venda:", err);
+      alert(err.message || "❌ Ocorreu um erro ao registrar a venda.");
+    }
+  };
 
   const imprimirPedido = async () => {
     const ref = doc(db, "configuracoes", "recibo");
     const snap = await getDoc(ref);
     const cfg = snap.exists() ? snap.data() : {};
 
-    // Define largura conforme formato escolhido
     const largura =
       cfg.formato === "58mm"
         ? "58mm"
         : cfg.formato === "80mm"
-          ? "80mm"
-          : "100%";
+        ? "80mm"
+        : "100%";
 
     let conteudo = `
-    <div style="font-family: monospace; text-align: center; width:${largura}; font-size:${cfg.formato === "A4" ? "14px" : "12px"
-      };">
-      ${cfg.logoUrl ? `<img src="${cfg.logoUrl}" style="max-width:80px;"/><br/>` : ""}
-      <h3>${cfg.cabecalho || "Recibo PDV"}</h3>
-      <p>
-        ${cfg.endereco || ""}<br/>
-        ${cfg.telefone || ""}
-      </p>
-      <hr/>
-      ${cfg.mostrarProdutos
-        ? `<ul style="text-align:left; list-style:none; padding:0;">
-              ${carrinho
-          .map(
-            (p) =>
-              `<li>${p.nome} x${p.qtd} .... R$ ${(p.qtd * p.preco).toFixed(
+      <div style="font-family: monospace; text-align: center; width:${largura}; font-size:${
+      cfg.formato === "A4" ? "14px" : "12px"
+    };">
+        ${cfg.logoUrl ? `<img src="${cfg.logoUrl}" style="max-width:80px;"/><br/>` : ""}
+        <h3>${cfg.cabecalho || "Recibo PDV"}</h3>
+        <p>
+          ${cfg.endereco || ""}<br/>
+          ${cfg.telefone || ""}
+        </p>
+        <hr/>
+        ${
+          cfg.mostrarProdutos
+            ? `<ul style="text-align:left; list-style:none; padding:0;">
+                ${carrinho
+                  .map(
+                    (p) =>
+                      `<li>${p.nome} x${p.qtd} .... R$ ${(p.qtd * p.preco).toFixed(
+                        2
+                      )}</li>`
+                  )
+                  .join("")}
+              </ul>`
+            : ""
+        }
+        ${cfg.mostrarTotal ? `<h4>Total: R$ ${total.toFixed(2)}</h4>` : ""}
+        ${cfg.mostrarPagamento ? `<p>Pagamento: ${pagamento}</p>` : ""}
+        ${
+          cfg.mostrarTroco && pagamento === "dinheiro"
+            ? `<p>Recebido: R$ ${parseFloat(valorRecebido || 0).toFixed(
                 2
-              )}</li>`
-          )
-          .join("")}
-            </ul>`
-        : ""
-      }
-      ${cfg.mostrarTotal ? `<h4>Total: R$ ${total.toFixed(2)}</h4>` : ""}
-      ${cfg.mostrarPagamento ? `<p>Pagamento: ${pagamento}</p>` : ""}
-      ${cfg.mostrarTroco && pagamento === "dinheiro"
-        ? `<p>Recebido: R$ ${parseFloat(valorRecebido || 0).toFixed(
-          2
-        )} | Troco: R$ ${troco.toFixed(2)}</p>`
-        : ""
-      }
-      ${cfg.mostrarOperador ? `<p>Operador: ${operador}</p>` : ""}
-      ${cfg.mostrarData ? `<p>${new Date().toLocaleString()}</p>` : ""}
-      <hr/>
-      <p>${cfg.rodape || ""}</p>
-    </div>
-  `;
+              )} | Troco: R$ ${troco.toFixed(2)}</p>`
+            : ""
+        }
+        ${cfg.mostrarOperador ? `<p>Operador: ${operador}</p>` : ""}
+        ${cfg.mostrarData ? `<p>${new Date().toLocaleString()}</p>` : ""}
+        <hr/>
+        <p>${cfg.rodape || ""}</p>
+      </div>
+    `;
 
     const janela = window.open("", "_blank");
     if (janela) {
@@ -173,7 +204,7 @@ function PontoDeVenda() {
     }
   };
 
-  // Resumo do caixa (soma das vendas do dia)
+  // 🔹 Resumo do caixa (soma das vendas do dia)
   const calcularResumoCaixa = async () => {
     const snap = await getDocs(collection(db, "pedidos"));
     const pedidos = snap.docs.map((d) => d.data());
@@ -187,7 +218,6 @@ function PontoDeVenda() {
     });
 
     const resumo = { dinheiro: 0, cartao: 0, pix: 0, total: 0 };
-
     pedidosHoje.forEach((p) => {
       resumo[p.pagamento] += p.total;
       resumo.total += p.total;
@@ -210,9 +240,7 @@ function PontoDeVenda() {
 
   return (
     <div>
-      {/* Navbar fixa do PDV */}
       <PdvNavbar />
-
       <div className="container py-4">
         <h2 className="mb-3">💳 Ponto de Venda</h2>
         <p className="text-muted">Operador: {operador}</p>
@@ -229,12 +257,20 @@ function PontoDeVenda() {
                   {produtos.map((p) => (
                     <Button
                       key={p.id}
-                      variant="outline-primary"
+                      variant={
+                        p.controlaEstoque && p.estoque <= 0
+                          ? "secondary"
+                          : "outline-primary"
+                      }
                       className="btn-lg"
+                      disabled={p.controlaEstoque && p.estoque <= 0}
                       onClick={() => adicionarAoCarrinho(p)}
                     >
                       {p.nome} <br />
-                      <small>R$ {p.preco.toFixed(2)}</small>
+                      <small>R$ {p.preco.toFixed(2)}</small> <br />
+                      <small>
+                        Estoque: {p.controlaEstoque ? p.estoque : "∞"}
+                      </small>
                     </Button>
                   ))}
                 </div>
@@ -294,10 +330,7 @@ function PontoDeVenda() {
                   >
                     ✅ Finalizar Venda
                   </Button>
-                  <Button
-                    variant="dark"
-                    onClick={calcularResumoCaixa}
-                  >
+                  <Button variant="dark" onClick={calcularResumoCaixa}>
                     📊 Fechamento de Caixa
                   </Button>
                 </div>
@@ -379,9 +412,15 @@ function PontoDeVenda() {
           <Modal.Body>
             {resumo ? (
               <>
-                <p><strong>Dinheiro:</strong> R$ {resumo.dinheiro.toFixed(2)}</p>
-                <p><strong>Cartão:</strong> R$ {resumo.cartao.toFixed(2)}</p>
-                <p><strong>Pix:</strong> R$ {resumo.pix.toFixed(2)}</p>
+                <p>
+                  <strong>Dinheiro:</strong> R$ {resumo.dinheiro.toFixed(2)}
+                </p>
+                <p>
+                  <strong>Cartão:</strong> R$ {resumo.cartao.toFixed(2)}
+                </p>
+                <p>
+                  <strong>Pix:</strong> R$ {resumo.pix.toFixed(2)}
+                </p>
                 <hr />
                 <h5>Total do Dia: R$ {resumo.total.toFixed(2)}</h5>
               </>

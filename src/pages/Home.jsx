@@ -91,6 +91,7 @@ function Home() {
   if (!userData || !resumo) return <p>Carregando...</p>;
 
   return (
+    <Layout>
     <div className="d-flex">
       
       {/* Conteúdo */}
@@ -181,6 +182,7 @@ function Home() {
         )}
       </div>
     </div>
+    </Layout>
   );
 }
 
