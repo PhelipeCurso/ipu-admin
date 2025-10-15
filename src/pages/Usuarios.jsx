@@ -226,6 +226,16 @@ export default function Usuarios() {
                 <Form.Control type="date" name="membroDesde" value={usuarioEditando.membroDesde || ''} onChange={handleChange} />
               </Form.Group>
 
+              {/* 🔽 Novo seletor de tipo de usuário */}
+              <Form.Group className="col-md-6">
+                <Form.Label>Tipo de Usuário</Form.Label>
+                <Form.Select name="tipoUsuario" value={usuarioEditando.tipoUsuario || ''} onChange={handleChange}>
+                  <option value="">Selecione...</option>
+                  <option value="Membro">Membro</option>
+                  <option value="Pastor">Pastor</option>
+                </Form.Select>
+              </Form.Group>
+
               {/* Permissões */}
               <Form.Group className="col-md-12">
                 <fieldset className="border rounded p-3">
